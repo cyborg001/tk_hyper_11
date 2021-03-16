@@ -464,8 +464,13 @@ def formatear_hyp(path_file, path_poligonos,path_ciudades,sentido, magni=1, gapL
     lineas = path_file.readlines()
     gapLine = list(filter(lambda line: "GAP=" in line, lineas))
     focalLine = list(filter(lambda line: " F" in line, lineas))
-    
-    print(gapLine,focalLine)
+    strGap = ''
+    strFocal = ''
+    for n in gapLine:
+        strGap+=n+' '
+    for n in focalLine:
+        strFocal+= n+' '
+    # print(strGap,strFocal)
     analista = ''
     for n in lineas:
         if 'ACTION:UP' in n:
@@ -534,12 +539,21 @@ def formatear_hyp(path_file, path_poligonos,path_ciudades,sentido, magni=1, gapL
             mag = str(prom)
         else:
             mag = "0.0"
-    sal=i_d+ '  '+fecha+'  '+hora+'  '+lat+'  '+lon+'  '+deph+'  '+mag+'  '
-    comentario = generar_comentario(path_ciudades,float(lat),float(lon),path_poligonos)
 
+    comentario = generar_comentario(path_ciudades,float(lat),float(lon),path_poligonos)
+    poligonos_acuaticos =['Canal de la Mona','Canal du Sud','Mar Caribe','Oceano Atlantico','Golfo de Gonaive']
+    for n in poligonos_acuaticos:
+        if n in comentario:
+            print(f'{n} is in {comentario}')
+            if float(deph) < 1:
+                # print('es menor')
+                deph = ' 10.0'
+            break
+    sal=i_d+ '  '+fecha+'  '+hora+'  '+lat+'  '+lon+'  '+deph+'  '+mag+'  '
     #json = "{'i_d':'"+i_d+"','fecha':'"+fecha+"','hora':'"+hora+"','lat':'"+lat+"','lon':'"+lon+"','deph':'"+deph+"','mag':'"+mag+"','comentario':'"+comentario+"}"
 
     obj = {'id':i_d,
+    'analista':analista,
     "fecha":fecha,
     "hora":hora,
     "lat":lat,
@@ -553,12 +567,13 @@ def formatear_hyp(path_file, path_poligonos,path_ciudades,sentido, magni=1, gapL
     "comentario":comentario,
     "salida":sal,
     "tipo_magni":magni,
-    "gapInfo":gapLines,
-    "focalInfo":focalLines,
+    "gapInfo":strGap,
+    "focalInfo":strFocal,
     'sentido':sentido,
     'data_estaciones':data_estaciones,
     }
     #print (json.dumps(obj))
+    # print(obj)
     return obj
 
 def formatear_dummy(linea,ciudades,path_provincias):
@@ -672,17 +687,34 @@ def insertar_comentario(paths,formato,sentido):
     archivo.writelines(lineas)
     # print(archivo.read())
     archivo.close()
-    # thread = threading.Thread(target=EnviarEventoABD, args=(nombre,sentido,formato["tipo_magni"]))
-    thread = threading.Thread(target=EnviarEventoABD, args=(nombre,sentido,formato))
+    thread = threading.Thread(target=EnviarEventoABD, args=(nombre,sentido,formato["tipo_magni"]))
+    # thread = threading.Thread(target=EnviarEventoABD, args=(nombre,sentido,formato))#para mi prueba utilizando el objeto formato en vez de crear otro
     thread.start()
 
 
 def EnviarEventoABD(nombre,sentido,formato):
-    tipoMagnitud = formato['tipo_magni']
+    # tipoMagnitud = formato['tipo_magni']
+    # enviarReq = endpoint.EventsEndpoint()
+    # reqResult=enviarReq.EnviarEvento(nombre,sentido,tipoMagnitud,formato)
+    # return reqResult
     enviarReq = endpoint.EventsEndpoint()
-    reqResult=enviarReq.EnviarEvento(nombre,sentido,tipoMagnitud,formato)
+    paths = open("paths.txt").readlines()
+    path_poligonos = 'provinciascsv'
+    path_ciudades = 'localidades_2mundo.dat'
+    hyp_path = paths[0][:-1]#'hyp.out'#r'Z:\seismo\WOR\hyp.out'
+    fpath = open(hyp_path)
+    linea = fpath.readline()
+    gapLine = list(filter(lambda line: "GAP=" in line, fpath))
+    focalLine = list(filter(lambda line: " F" in line, fpath))
+    ciudades = get_ciudades(path_ciudades)
+    # cambiaremos linea por fpath en el primer argumento de formatear_hyp()
+    formato = formatear_hyp(fpath,path_poligonos,ciudades,sentido,tipoMagnitud,gapLine,focalLine)
+    eventObj = EventObj(formato['lat'],formato['lon'],formato['depth'],formato['fecha'],formato['hora'],formato['rms'],formato['mag'],
+    formato['magC'],formato['magL'],formato['magW'],formato['comentario'],formato['salida'],formato['tipo_magni'],formato['gapInfo'],formato['focalInfo'])
+    reqResult=enviarReq.EnviarEvento(nombre,sentido,tipoMagnitud,eventObj)
+    print(eventObj)
+    print(formato)
     return reqResult
-
 # def guardar_datos(paths,formato,sentido):
 # probando con sentido incluido en el json
 def guardar_datos(paths,formato):
@@ -739,6 +771,3 @@ def guardar_datos(paths,formato):
             fsalida.write(salida)
         fsalida.close()
         print("Datos guardados!")
-
-
-
