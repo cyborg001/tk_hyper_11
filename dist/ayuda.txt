@@ -32,10 +32,7 @@ Este archivo contiene 7 entradas que son parametros para el tk_hyper
 6) la contrasena de ese correo
 7) la carpeta donde se estan guardando los archivos seisan para insertarle
   el comentario generado por tk_hyper
-8) la direccion del servidor donde se hara el post.
-
-en un futuro...
-9) el valor minimo de profundidad en las zonas maritimas. Este valor
+8) el valor minimo de profundidad en las zonas maritimas. Este valor
    le indica a tk_hyper que si el la profundidad en las zonas maritimas
    es menor que el, entonces la profundidad se ajusta a un valor minimo
    de 10

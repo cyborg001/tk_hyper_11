@@ -462,6 +462,7 @@ def enviarEmail(destinatario,msg,sentido,paths,modo='html'):#el modo indica si e
 def formatear_hyp(path_file, path_poligonos,path_ciudades,sentido, magni=1, gapLines='',focalLines=''):
     # cambiaremos linea por lineas y linea sera = lineas[0] o a lineas[0][-1] como funcione
     lineas = path_file.readlines()
+    path_file.close()
     gapLine = list(filter(lambda line: "GAP=" in line, lineas))
     focalLine = list(filter(lambda line: " F" in line, lineas))
     strGap = ''
@@ -486,6 +487,7 @@ def formatear_hyp(path_file, path_poligonos,path_ciudades,sentido, magni=1, gapL
         if index >=0 and lineas.index(l) >= index:
             data_estaciones += l
     print(data_estaciones)
+    print(lineas[0])
     linea = lineas[0]
     anio = linea[1:5]
     mes = linea[6:8]
@@ -633,7 +635,7 @@ def insertar_comentario(paths,formato,sentido):
     '''esta funcion acepta la ruta de un archivo y si el archvio tiene el formato indicado
     anade o reescribe la linea del comentario en (LOCALITY:)  por el segundo argumento (comentario) '''
     #paths = open(paths).readlines()
-    print("Insertando comentario....")
+    print("*** Insertando comentario....")
     if sentido == True:
         sentido_local = '(Sentido).'
     else:
@@ -660,7 +662,10 @@ def insertar_comentario(paths,formato,sentido):
     nombre = f'{dia}-{hhmm}-{ss}{region}.S{anio}{mes}'
     ruta_nombre = os.path.join(base,nombre)
     if ruta_nombre == None or os.path.isfile(ruta_nombre) == False:
-        print(f'no existe {ruta_nombre}')
+        print(f'*** no existe la ruta {ruta_nombre}')
+        thread = threading.Thread(target=EnviarEventoABD, args=(nombre,sentido,formato))
+        # thread = threading.Thread(target=EnviarEventoABD, args=(nombre,sentido,formato))#para mi prueba utilizando el objeto formato en vez de crear otro
+        thread.start()
         return None
     comentario = formato["comentario"]+sentido_local
     archivo = open(ruta_nombre,'r')
@@ -687,13 +692,13 @@ def insertar_comentario(paths,formato,sentido):
     archivo.writelines(lineas)
     # print(archivo.read())
     archivo.close()
-    thread = threading.Thread(target=EnviarEventoABD, args=(nombre,sentido,formato["tipo_magni"]))
+    thread = threading.Thread(target=EnviarEventoABD, args=(nombre,sentido,formato))
     # thread = threading.Thread(target=EnviarEventoABD, args=(nombre,sentido,formato))#para mi prueba utilizando el objeto formato en vez de crear otro
     thread.start()
 
 
 def EnviarEventoABD(nombre,sentido,formato):
-    # tipoMagnitud = formato['tipo_magni']
+    tipoMagnitud = formato['tipo_magni']
     # enviarReq = endpoint.EventsEndpoint()
     # reqResult=enviarReq.EnviarEvento(nombre,sentido,tipoMagnitud,formato)
     # return reqResult
@@ -708,17 +713,17 @@ def EnviarEventoABD(nombre,sentido,formato):
     focalLine = list(filter(lambda line: " F" in line, fpath))
     ciudades = get_ciudades(path_ciudades)
     # cambiaremos linea por fpath en el primer argumento de formatear_hyp()
-    formato = formatear_hyp(fpath,path_poligonos,ciudades,sentido,tipoMagnitud,gapLine,focalLine)
+    # formato = formatear_hyp(fpath,path_poligonos,ciudades,sentido,tipoMagnitud,gapLine,focalLine)
     eventObj = EventObj(formato['lat'],formato['lon'],formato['depth'],formato['fecha'],formato['hora'],formato['rms'],formato['mag'],
     formato['magC'],formato['magL'],formato['magW'],formato['comentario'],formato['salida'],formato['tipo_magni'],formato['gapInfo'],formato['focalInfo'])
     reqResult=enviarReq.EnviarEvento(nombre,sentido,tipoMagnitud,eventObj)
-    print(eventObj)
-    print(formato)
+    print(reqResult)
+    # print(formato)
     return reqResult
 # def guardar_datos(paths,formato,sentido):
 # probando con sentido incluido en el json
 def guardar_datos(paths,formato):
-        print("Guardando los datos en dummyX.dat,dummyX.copy.....")
+        print("*** Guardando los datos en dummyX.dat,dummyX.copy.....")
         salida = paths[1][:-1]#'dummyX.dat'#r'X:\dummyX.dat'
         fsalida = open(salida,'w')
         sentido = formato['sentido']
@@ -735,12 +740,20 @@ def guardar_datos(paths,formato):
             url = paths[7][:-1]
             # print(url)
             fsalida.write(datos)
-            print(f'Enviando el sismo a la direccion {url}')
-            r = requests.post(url,data = formato)
+            print(f'*** Enviando el sismo a la direccion {url}')
+            headers = {'Content-Length': '3477',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'python-requests/2.25.1',
+                'Accept-Encoding': 'gzip, deflate',
+                'Accept': '*/*',
+                'Connection': 'keep-alive',
+                'token': "2#gi5@s=3y@#23+6@q^tq=2#=rdqqju#47_q(cawbcqzs"
+                }
+            r = requests.post(url,data = formato, headers = headers)
             if r.status_code == 200:
-                print(f'Enviado exitosamente!')
+                print(f'*** Enviado exitosamente!')
             else:
-                print(f'Error {r.status_code}, el sismo no pudo ser enviado!')
+                print(f'*** Error {r.status_code}, el sismo no pudo ser enviado!')
         fsalida.close
 
         salida_copy =  paths[2][:-1]#'dummyX.copy'#r'Z:\seismo\WOR\dummyX.copy'
@@ -770,4 +783,4 @@ def guardar_datos(paths,formato):
         with open(salida_copy,'w') as fsalida:
             fsalida.write(salida)
         fsalida.close()
-        print("Datos guardados!")
+        print("*** Datos guardados!")
