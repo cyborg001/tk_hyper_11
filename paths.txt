@@ -1,10 +1,10 @@
-hyp.out
+C:/seismo/WOR/hyp.out
 dummyX.dat
-dummyX.copy
-db.json
+C:/catalogo/dummyX.copy
+C:/catalogo/db.json
 reportesismico@gmail.com
 sismologia1948
-Z:\seismo\REA\DOM01
+C:\seismo\REA\DOM01
 http://127.0.0.1:8000/uploader/
 https://cns-app.herokuapp.com/uploader/
 
@@ -18,3 +18,8 @@ Z:/seismo/WOR/hyp.out
 X:/dummyX.dat
 C:/catalogo/dummyX.copy
 C:/catalogo/db.json
+
+hyp.out
+dummyX.dat
+dummyX.copy
+db.json
